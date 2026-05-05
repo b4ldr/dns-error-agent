@@ -1,0 +1,30 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Project-local build outputs
+/bin/
+/dist/
+/dns-error-agent
+
+# Coverage files
+coverage.out
+*.coverprofile
+
+# Environment/local config
+.env
+.env.*
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
