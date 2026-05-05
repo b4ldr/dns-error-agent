@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: DNS Error Agent Dashboards
+    orgId: 1
+    folder: DNS Error Agent
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
