@@ -137,6 +137,12 @@ An example dashboard is included at:
 
 - `deploy/docker/grafana/dashboards/dns-error-agent-overview.json`
 
+This same dashboard JSON is mounted and auto-provisioned by the Docker stack.
+
+### Dashboard preview
+
+![DNS Error Agent Grafana Dashboard](dashboard-example.png)
+
 To import it in Grafana:
 
 1. Open Grafana -> Dashboards -> New -> Import.
