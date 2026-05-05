@@ -2,7 +2,7 @@ services:
   agent:
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile
+      dockerfile: docker/common/Dockerfile
     container_name: dns-error-agent
     command:
       - -agent-domain
@@ -32,7 +32,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../common/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
       - monitoring
 
@@ -45,9 +45,9 @@ services:
     ports:
       - ${GRAFANA_PORT:-80}:3000
     volumes:
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ../common/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../common/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../common/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
     networks:

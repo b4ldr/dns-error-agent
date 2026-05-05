@@ -73,10 +73,10 @@ This repository includes a Docker Compose stack that runs:
 ### Start
 
 ```bash
-cp deploy/docker/.env.example deploy/docker/.env
+cp docker/dns/.env.example docker/dns/.env
 docker compose \
-  --env-file deploy/docker/.env \
-  -f deploy/docker/docker-compose.yml \
+  --env-file docker/dns/.env \
+  -f docker/dns/docker-compose.yml \
   up --build -d
 ```
 
@@ -90,8 +90,8 @@ Examples:
 ```bash
 DNS_PORT=5353 GRAFANA_PORT=3000 \
 docker compose \
-  --env-file deploy/docker/.env \
-  -f deploy/docker/docker-compose.yml \
+  --env-file docker/dns/.env \
+  -f docker/dns/docker-compose.yml \
   up --build -d
 ```
 
@@ -100,7 +100,27 @@ Then:
 - DNS agent is reachable on `127.0.0.1:${DNS_PORT}`
 - Grafana is reachable at `http://127.0.0.1:${GRAFANA_PORT}`
 
-All Docker-related files live under `deploy/docker/`.
+Compose files live under `docker/dns/` and shared assets live under `docker/common/`.
+
+## Docker stack (Knot + dnstap + Agent + Prometheus + Grafana)
+
+A separate compose project is available under `docker/knot/`.
+
+This stack runs:
+
+- `knot` as the DNS daemon on port `53`
+- `agent` in `dnstap` mode over a shared unix socket
+- the same Prometheus scrape config and Grafana provisioning/dashboard from `docker/common/`
+
+Start it with:
+
+```bash
+cp docker/knot/.env.example docker/knot/.env
+docker compose \
+  --env-file docker/knot/.env \
+  -f docker/knot/docker-compose.yml \
+  up --build -d
+```
 
 Scrape metrics at `http://127.0.0.1:9100/metrics`.
 
@@ -170,7 +190,7 @@ go test ./...
 
 An example dashboard is included at:
 
-- `deploy/docker/grafana/dashboards/dns-error-agent-overview.json`
+- `docker/common/grafana/dashboards/dns-error-agent-overview.json`
 
 This same dashboard JSON is mounted and auto-provisioned by the Docker stack.
 
@@ -181,7 +201,7 @@ This same dashboard JSON is mounted and auto-provisioned by the Docker stack.
 To import it in Grafana:
 
 1. Open Grafana -> Dashboards -> New -> Import.
-2. Upload `deploy/docker/grafana/dashboards/dns-error-agent-overview.json`.
+2. Upload `docker/common/grafana/dashboards/dns-error-agent-overview.json`.
 3. Select your Prometheus datasource when prompted.
 4. Save the dashboard.
 

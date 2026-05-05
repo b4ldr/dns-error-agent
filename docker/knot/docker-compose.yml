@@ -1,0 +1,80 @@
+services:
+  agent:
+    build:
+      context: ../..
+      dockerfile: docker/common/Dockerfile
+    container_name: dns-error-agent-dnstap
+    command:
+      - -mode
+      - dnstap
+      - -agent-domain
+      - ${AGENT_DOMAIN:-agent.example.}
+      - -dnstap-network
+      - unix
+      - -dnstap-address
+      - /dnstap/dnstap.sock
+      - -metrics-addr
+      - :9100
+      - -metrics-path
+      - /metrics
+      - -metrics-zone-label-depth
+      - ${METRICS_ZONE_LABEL_DEPTH:-2}
+    volumes:
+      - dnstap-socket:/dnstap
+    networks:
+      - monitoring
+
+  knot:
+    image: cznic/knot:latest
+    container_name: dns-error-agent-knot
+    command:
+      - knotd
+      - -c
+      - /etc/knot/knot.conf
+      - -f
+    ports:
+      - ${DNS_PORT:-53}:53/udp
+      - ${DNS_PORT:-53}:53/tcp
+    volumes:
+      - ./knot/knot.conf:/etc/knot/knot.conf:ro
+      - ./knot/zones:/etc/knot/zones:ro
+      - dnstap-socket:/dnstap
+    depends_on:
+      - agent
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: dns-error-agent-knot-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ../common/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: dns-error-agent-knot-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    ports:
+      - ${GRAFANA_PORT:-80}:3000
+    volumes:
+      - ../common/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../common/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../common/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+volumes:
+  dnstap-socket:
+
+networks:
+  monitoring:
+    driver: bridge
