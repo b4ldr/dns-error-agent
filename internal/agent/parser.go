@@ -39,15 +39,14 @@ func ParseReportQName(inputName, agentDomain string) (Report, bool) {
 		return Report{}, false
 	}
 
-	if _, err := strconv.Atoi(edePart); err != nil {
+	ede, err := strconv.Atoi(edePart)
+	if err != nil {
 		return Report{}, false
 	}
 
 	if !validQTypeLabel(qtypePart) {
 		return Report{}, false
 	}
-
-	ede, _ := strconv.Atoi(edePart)
 
 	return Report{
 		QName:     strings.Join(faulty, ".") + ".",

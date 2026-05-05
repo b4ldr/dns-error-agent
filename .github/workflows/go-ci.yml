@@ -37,9 +37,12 @@ jobs:
               run: go build ./...
 
     validate-dashboard:
-        name: Validate Grafana Dashboard
+        name: Validate Grafana Dashboard (${{ matrix.stack }})
         runs-on: ubuntu-latest
         needs: test-and-build
+        strategy:
+            matrix:
+                stack: [ dns, knot ]
         env:
             DNS_PORT: "5353"
             GRAFANA_PORT: "3000"
@@ -53,8 +56,8 @@ jobs:
             - name: Start Docker stack
               run: |
                   docker compose \
-                    --env-file docker/dns/.env.example \
-                    -f docker/dns/docker-compose.yml \
+                    --env-file docker/${{ matrix.stack }}/.env.example \
+                    -f docker/${{ matrix.stack }}/docker-compose.yml \
                     up --build -d
 
             - name: Validate dashboard in Grafana
@@ -70,16 +73,16 @@ jobs:
               if: failure()
               run: |
                   docker compose \
-                    --env-file docker/dns/.env.example \
-                    -f docker/dns/docker-compose.yml \
+                    --env-file docker/${{ matrix.stack }}/.env.example \
+                    -f docker/${{ matrix.stack }}/docker-compose.yml \
                     logs --no-color
 
             - name: Stop Docker stack
               if: always()
               run: |
                   docker compose \
-                    --env-file docker/dns/.env.example \
-                    -f docker/dns/docker-compose.yml \
+                    --env-file docker/${{ matrix.stack }}/.env.example \
+                    -f docker/${{ matrix.stack }}/docker-compose.yml \
                     down -v
 
     validate-knot-compose:
@@ -97,49 +100,3 @@ jobs:
                     --env-file docker/knot/.env.example \
                     -f docker/knot/docker-compose.yml \
                     config
-
-    validate-dashboard-knot:
-        name: Validate Grafana Dashboard (Knot)
-        runs-on: ubuntu-latest
-        needs: test-and-build
-        env:
-            DNS_PORT: "5353"
-            GRAFANA_PORT: "3000"
-            GRAFANA_ADMIN_USER: admin
-            GRAFANA_ADMIN_PASSWORD: admin
-
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Start Knot Docker stack
-              run: |
-                  docker compose \
-                    --env-file docker/knot/.env.example \
-                    -f docker/knot/docker-compose.yml \
-                    up --build -d
-
-            - name: Validate dashboard in Grafana (Knot)
-              env:
-                  GRAFANA_URL: http://127.0.0.1:3000
-                  GRAFANA_USER: admin
-                  GRAFANA_PASSWORD: admin
-                  GRAFANA_DASHBOARD_UID: dns-error-agent-overview
-                  GRAFANA_DATASOURCE_UID: prometheus
-              run: python3 scripts/validate_grafana_dashboard.py
-
-            - name: Show Knot container logs on failure
-              if: failure()
-              run: |
-                  docker compose \
-                    --env-file docker/knot/.env.example \
-                    -f docker/knot/docker-compose.yml \
-                    logs --no-color
-
-            - name: Stop Knot Docker stack
-              if: always()
-              run: |
-                  docker compose \
-                    --env-file docker/knot/.env.example \
-                    -f docker/knot/docker-compose.yml \
-                    down -v

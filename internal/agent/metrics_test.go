@@ -76,21 +76,6 @@ func TestMetricsObserveValidReport(t *testing.T) {
 	}
 }
 
-func TestMetricsNilReceiverNoPanic(t *testing.T) {
-	var m *metrics
-
-	defer func() {
-		if recovered := recover(); recovered != nil {
-			t.Fatalf("expected nil receiver methods not to panic, got %v", recovered)
-		}
-	}()
-
-	m.observeRequest("udp", dns.TypeTXT)
-	m.observeResponse("udp", dns.RcodeSuccess, false)
-	m.observeReportEvent("valid")
-	m.observeValidReport(Report{EDECode: 7, QueryType: "1(A)"})
-}
-
 func TestDNSTypeLabel(t *testing.T) {
 	if got := dnsTypeLabel(dns.TypeA); got != "A" {
 		t.Fatalf("dnsTypeLabel(TypeA) = %q, want %q", got, "A")

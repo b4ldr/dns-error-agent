@@ -17,20 +17,14 @@ import (
 )
 
 func runDNSTap(cfg Config, srv *Server, metricsServer *http.Server, sigch <-chan os.Signal) error {
-	listener, cleanup, err := listenDNSTap(cfg)
+	listener, cleanup, err := listenDNSTap(srv.dnstapNet, strings.TrimSpace(cfg.DNSTapAddress))
 	if err != nil {
-		if metricsServer != nil {
-			_ = metricsServer.Shutdown(context.Background())
-		}
+		stopMetricsServer(metricsServer)
 		return err
 	}
 	defer cleanup()
 
-	network := strings.ToLower(strings.TrimSpace(cfg.DNSTapNetwork))
-	if network == "" {
-		network = "unix"
-	}
-	srv.logger.Printf("rfc9567 agent listening dnstap network=%s address=%s agent=%s", network, cfg.DNSTapAddress, srv.agentDomain)
+	srv.logger.Printf("rfc9567 agent listening dnstap network=%s address=%s agent=%s", srv.dnstapNet, cfg.DNSTapAddress, srv.agentDomain)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -46,21 +40,13 @@ func runDNSTap(cfg Config, srv *Server, metricsServer *http.Server, sigch <-chan
 	cancel()
 	_ = listener.Close()
 	wg.Wait()
-	if metricsServer != nil {
-		_ = metricsServer.Shutdown(context.Background())
-	}
+	stopMetricsServer(metricsServer)
 	return nil
 }
 
-func listenDNSTap(cfg Config) (net.Listener, func(), error) {
-	network := strings.ToLower(strings.TrimSpace(cfg.DNSTapNetwork))
-	if network == "" {
-		network = "unix"
-	}
-	address := strings.TrimSpace(cfg.DNSTapAddress)
-
+func listenDNSTap(network, address string) (net.Listener, func(), error) {
 	cleanup := func() {}
-	if network == "unix" {
+	if network == DNSTapNetworkUnix {
 		if err := os.Remove(address); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, cleanup, err
 		}

@@ -22,6 +22,8 @@ type logger interface {
 }
 
 type Server struct {
+	mode        string // normalized: ModeDNS or ModeDNSTap
+	dnstapNet   string // normalized: DNSTapNetworkUnix or DNSTapNetworkTCP
 	agentDomain string
 	txtResponse string
 	verbosity   int
@@ -36,27 +38,32 @@ func NewServer(cfg Config, lg logger) (*Server, error) {
 	}
 	mode := strings.ToLower(strings.TrimSpace(cfg.Mode))
 	if mode == "" {
-		mode = "dns"
+		mode = ModeDNS
 	}
-	if mode != "dns" && mode != "dnstap" {
+	if mode != ModeDNS && mode != ModeDNSTap {
 		return nil, errors.New("mode must be one of: dns, dnstap")
 	}
-	if mode == "dnstap" {
-		network := strings.ToLower(strings.TrimSpace(cfg.DNSTapNetwork))
-		if network == "" {
-			network = "unix"
+
+	dnstapNet := ""
+	if mode == ModeDNSTap {
+		dnstapNet = strings.ToLower(strings.TrimSpace(cfg.DNSTapNetwork))
+		if dnstapNet == "" {
+			dnstapNet = DNSTapNetworkUnix
 		}
-		if network != "unix" && network != "tcp" {
+		if dnstapNet != DNSTapNetworkUnix && dnstapNet != DNSTapNetworkTCP {
 			return nil, errors.New("dnstap-network must be one of: unix, tcp")
 		}
 		if strings.TrimSpace(cfg.DNSTapAddress) == "" {
 			return nil, errors.New("dnstap-address must not be empty in dnstap mode")
 		}
 	}
+
 	if lg == nil {
 		lg = log.New(os.Stdout, "", log.LstdFlags)
 	}
 	return &Server{
+		mode:        mode,
+		dnstapNet:   dnstapNet,
 		agentDomain: normalizedAgent,
 		txtResponse: cfg.TXTResponse,
 		verbosity:   cfg.Verbosity,
@@ -76,10 +83,6 @@ func Run(cfg Config, lg logger) error {
 	if err != nil {
 		return err
 	}
-	mode := strings.ToLower(strings.TrimSpace(cfg.Mode))
-	if mode == "" {
-		mode = "dns"
-	}
 
 	metricsPath := cfg.MetricsPath
 	if metricsPath == "" {
@@ -92,8 +95,8 @@ func Run(cfg Config, lg logger) error {
 	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
 	defer signal.Stop(sigch)
 
-	switch mode {
-	case "dnstap":
+	switch srv.mode {
+	case ModeDNSTap:
 		return runDNSTap(cfg, srv, metricsServer, sigch)
 	default:
 		return runDNS(cfg, srv, metricsServer, sigch)
@@ -122,9 +125,7 @@ func runDNS(cfg Config, srv *Server, metricsServer *http.Server, sigch <-chan os
 
 	_ = udpServer.Shutdown()
 	_ = tcpServer.Shutdown()
-	if metricsServer != nil {
-		_ = metricsServer.Shutdown(context.Background())
-	}
+	stopMetricsServer(metricsServer)
 	return nil
 }
 
@@ -149,6 +150,19 @@ func startMetricsServer(metricsServer *http.Server, addr, path string, lg logger
 	}()
 }
 
+func stopMetricsServer(metricsServer *http.Server) {
+	if metricsServer == nil {
+		return
+	}
+	_ = metricsServer.Shutdown(context.Background())
+}
+
+func (s *Server) writeReply(w dns.ResponseWriter, m *dns.Msg) {
+	if err := w.WriteMsg(m); err != nil {
+		s.logAt(1, "write reply failed remote=%s: %v", w.RemoteAddr(), err)
+	}
+}
+
 func (s *Server) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(r)
@@ -159,7 +173,7 @@ func (s *Server) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		s.metrics.observeReportEvent("malformed_query")
 		m.Rcode = dns.RcodeFormatError
 		s.metrics.observeResponse("unknown", m.Rcode, m.Truncated)
-		_ = w.WriteMsg(m)
+		s.writeReply(w, m)
 		return
 	}
 
@@ -178,7 +192,7 @@ func (s *Server) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		m.Answer = nil
 		m.Rcode = dns.RcodeSuccess
 		s.metrics.observeResponse(transport, m.Rcode, m.Truncated)
-		_ = w.WriteMsg(m)
+		s.writeReply(w, m)
 		return
 	}
 
@@ -187,7 +201,7 @@ func (s *Server) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	if !ok {
 		m.Rcode = dns.RcodeNameError
 		s.metrics.observeResponse(transport, m.Rcode, m.Truncated)
-		_ = w.WriteMsg(m)
+		s.writeReply(w, m)
 		return
 	}
 
@@ -207,21 +221,20 @@ func (s *Server) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	m.Rcode = dns.RcodeSuccess
 	s.metrics.observeResponse(transport, m.Rcode, m.Truncated)
 	s.logAt(3, "response sent remote=%s qname=%s rcode=%d answers=%d", w.RemoteAddr(), q.Name, m.Rcode, len(m.Answer))
-	_ = w.WriteMsg(m)
+	s.writeReply(w, m)
 }
 
-func (s *Server) processReportMessage(msg *dns.Msg, transport string, remoteAddr net.Addr) bool {
+func (s *Server) processReportMessage(msg *dns.Msg, transport string, remoteAddr net.Addr) {
 	if len(msg.Question) == 0 {
 		s.logAt(1, "dropping malformed dnstap query: no question section")
 		s.metrics.observeReportEvent("malformed_query")
-		return false
+		return
 	}
 
 	q := msg.Question[0]
 	s.metrics.observeRequest(transport, q.Qtype)
 	s.logAt(3, "received dnstap query remote=%s qname=%s qtype=%d", remoteAddr, q.Name, q.Qtype)
-	_, ok := s.processReportQuestion(q, remoteAddr)
-	return ok
+	s.processReportQuestion(q, remoteAddr)
 }
 
 func (s *Server) processReportQuestion(q dns.Question, remoteAddr net.Addr) (Report, bool) {

@@ -2,16 +2,35 @@ package agent
 
 import "time"
 
+// Runtime mode constants.
+const (
+	ModeDNS    = "dns"
+	ModeDNSTap = "dnstap"
+)
+
+// DNSTap network constants.
+const (
+	DNSTapNetworkUnix = "unix"
+	DNSTapNetworkTCP  = "tcp"
+)
+
 type Config struct {
-	Mode                  string
-	AgentDomain           string
-	UDPAddr               string
-	TCPAddr               string
-	DNSTapNetwork         string
-	DNSTapAddress         string
-	DNSTapTimeout         time.Duration
-	TXTResponse           string
-	Verbosity             int
+	// General
+	Mode      string
+	Verbosity int
+
+	// DNS mode
+	AgentDomain string
+	UDPAddr     string
+	TCPAddr     string
+	TXTResponse string
+
+	// DNSTap mode
+	DNSTapNetwork string
+	DNSTapAddress string
+	DNSTapTimeout time.Duration
+
+	// Metrics
 	MetricsAddr           string
 	MetricsPath           string
 	MetricsZoneLabelDepth int

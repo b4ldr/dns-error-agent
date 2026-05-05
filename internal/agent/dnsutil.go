@@ -4,22 +4,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
-
-	"github.com/miekg/dns"
 )
-
-func hasDNSCookie(msg *dns.Msg) bool {
-	opt := msg.IsEdns0()
-	if opt == nil {
-		return false
-	}
-	for _, option := range opt.Option {
-		if option.Option() == dns.EDNS0COOKIE {
-			return true
-		}
-	}
-	return false
-}
 
 func isUDP(addr net.Addr) bool {
 	if addr == nil {

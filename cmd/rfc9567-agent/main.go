@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"dns-error-agent/internal/agent"
 )
@@ -87,7 +86,7 @@ func main() {
 		TCPAddr:               *tcpAddr,
 		DNSTapNetwork:         *dnstapNetwork,
 		DNSTapAddress:         *dnstapAddress,
-		DNSTapTimeout:         time.Duration(*dnstapTimeout),
+		DNSTapTimeout:         *dnstapTimeout,
 		TXTResponse:           *txtResponse,
 		Verbosity:             int(verbosity),
 		MetricsAddr:           *metricsAddr,

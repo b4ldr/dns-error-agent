@@ -52,30 +52,18 @@ func newMetrics(registry prometheus.Registerer, zoneLabelDepth int) *metrics {
 }
 
 func (m *metrics) observeRequest(transport string, qtype uint16) {
-	if m == nil {
-		return
-	}
 	m.dnsRequestsTotal.WithLabelValues(transport, dnsTypeLabel(qtype)).Inc()
 }
 
 func (m *metrics) observeResponse(transport string, rcode int, truncated bool) {
-	if m == nil {
-		return
-	}
 	m.dnsResponsesTotal.WithLabelValues(transport, dns.RcodeToString[rcode], strconv.FormatBool(truncated)).Inc()
 }
 
 func (m *metrics) observeReportEvent(result string) {
-	if m == nil {
-		return
-	}
 	m.reportEventsTotal.WithLabelValues(result).Inc()
 }
 
 func (m *metrics) observeValidReport(parsed Report) {
-	if m == nil {
-		return
-	}
 	m.reportsByEDETotal.WithLabelValues(
 		strconv.Itoa(parsed.EDECode),
 		normalizeQueryTypeForMetric(parsed.QueryType),

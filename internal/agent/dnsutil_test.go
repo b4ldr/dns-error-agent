@@ -3,8 +3,6 @@ package agent
 import (
 	"net"
 	"testing"
-
-	"github.com/miekg/dns"
 )
 
 type testAddr struct {
@@ -14,50 +12,6 @@ type testAddr struct {
 
 func (a testAddr) Network() string { return a.network }
 func (a testAddr) String() string  { return a.value }
-
-func TestHasDNSCookie(t *testing.T) {
-	tests := []struct {
-		name string
-		msg  *dns.Msg
-		want bool
-	}{
-		{
-			name: "no opt record",
-			msg:  new(dns.Msg),
-			want: false,
-		},
-		{
-			name: "opt without cookie",
-			msg: func() *dns.Msg {
-				m := new(dns.Msg)
-				opt := &dns.OPT{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeOPT}}
-				opt.Option = append(opt.Option, &dns.EDNS0_NSID{Code: dns.EDNS0NSID})
-				m.Extra = append(m.Extra, opt)
-				return m
-			}(),
-			want: false,
-		},
-		{
-			name: "opt with cookie",
-			msg: func() *dns.Msg {
-				m := new(dns.Msg)
-				opt := &dns.OPT{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeOPT}}
-				opt.Option = append(opt.Option, &dns.EDNS0_COOKIE{Code: dns.EDNS0COOKIE, Cookie: "0123456789abcdef"})
-				m.Extra = append(m.Extra, opt)
-				return m
-			}(),
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := hasDNSCookie(tt.msg); got != tt.want {
-				t.Fatalf("hasDNSCookie() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestIsUDP(t *testing.T) {
 	tests := []struct {
