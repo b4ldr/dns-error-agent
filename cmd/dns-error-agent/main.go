@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -9,6 +10,9 @@ import (
 
 	"dns-error-agent/internal/agent"
 )
+
+// version is set at build time via -ldflags "-X main.version=<tag>".
+var version = "dev"
 
 type verbosityFlag int
 
@@ -63,6 +67,7 @@ func expandCompactVerbosityArgs(args []string) []string {
 
 func main() {
 	var (
+		showVersion           = flag.Bool("version", false, "print version and exit")
 		mode                  = flag.String("mode", "dns", "runtime mode: dns or dnstap")
 		agentDomain           = flag.String("agent-domain", "agent.example.", "RFC9567 agent domain")
 		udpAddr               = flag.String("udp", ":8053", "UDP listen address")
@@ -78,6 +83,11 @@ func main() {
 	)
 	flag.Var(&verbosity, "v", "increase verbosity (repeatable: -v, -vv, -v -v)")
 	_ = flag.CommandLine.Parse(expandCompactVerbosityArgs(os.Args[1:]))
+
+	if *showVersion {
+		fmt.Println(version)
+		os.Exit(0)
+	}
 
 	cfg := agent.Config{
 		Mode:                  *mode,
