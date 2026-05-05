@@ -1,9 +1,15 @@
 package agent
 
+import "time"
+
 type Config struct {
+	Mode                  string
 	AgentDomain           string
 	UDPAddr               string
 	TCPAddr               string
+	DNSTapNetwork         string
+	DNSTapAddress         string
+	DNSTapTimeout         time.Duration
 	TXTResponse           string
 	Verbosity             int
 	MetricsAddr           string

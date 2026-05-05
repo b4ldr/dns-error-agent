@@ -59,8 +59,8 @@ func TestServeDNSMetricsInvalidAndChallenged(t *testing.T) {
 	if got := testutil.ToFloat64(srv.metrics.reportEventsTotal.WithLabelValues("invalid_qname")); got != 1 {
 		t.Fatalf("reportEventsTotal invalid_qname = %v, want 1", got)
 	}
-	if got := testutil.ToFloat64(srv.metrics.reportEventsTotal.WithLabelValues("challenged_no_cookie")); got != 1 {
-		t.Fatalf("reportEventsTotal challenged_no_cookie = %v, want 1", got)
+	if got := testutil.ToFloat64(srv.metrics.reportEventsTotal.WithLabelValues("challenged_udp")); got != 1 {
+		t.Fatalf("reportEventsTotal challenged_udp = %v, want 1", got)
 	}
 	if got := testutil.ToFloat64(srv.metrics.dnsResponsesTotal.WithLabelValues("tcp", "NXDOMAIN", "false")); got != 1 {
 		t.Fatalf("dnsResponsesTotal tcp/NXDOMAIN/false = %v, want 1", got)

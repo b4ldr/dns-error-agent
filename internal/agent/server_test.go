@@ -65,14 +65,14 @@ func TestServeDNSResponseMatrix(t *testing.T) {
 			wantAnswers: 0,
 		},
 		{
-			name:        "udp with cookie valid report returns txt",
+			name:        "udp with cookie still returns tc",
 			network:     "udp",
 			qname:       "_er.1.broken.test.7._er.agent.example.",
 			qtype:       dns.TypeTXT,
 			withCookie:  true,
-			wantTC:      false,
+			wantTC:      true,
 			wantRcode:   dns.RcodeSuccess,
-			wantAnswers: 1,
+			wantAnswers: 0,
 		},
 		{
 			name:        "tcp invalid report returns nxdomain",

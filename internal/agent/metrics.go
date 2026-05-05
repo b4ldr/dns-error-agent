@@ -32,7 +32,7 @@ func newMetrics(registry prometheus.Registerer, zoneLabelDepth int) *metrics {
 		}, []string{"transport", "rcode", "truncated"}),
 		reportEventsTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "dns_error_agent_report_events_total",
-			Help: "Total report processing outcomes (valid, invalid_qname, challenged_no_cookie, malformed_query).",
+			Help: "Total report processing outcomes (valid, invalid_qname, challenged_udp, malformed_query).",
 		}, []string{"result"}),
 		reportsByEDETotal: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "dns_error_agent_reports_by_ede_total",

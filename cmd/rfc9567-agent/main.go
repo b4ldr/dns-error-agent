@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"dns-error-agent/internal/agent"
 )
@@ -63,9 +64,13 @@ func expandCompactVerbosityArgs(args []string) []string {
 
 func main() {
 	var (
+		mode                  = flag.String("mode", "dns", "runtime mode: dns or dnstap")
 		agentDomain           = flag.String("agent-domain", "agent.example.", "RFC9567 agent domain")
 		udpAddr               = flag.String("udp", ":8053", "UDP listen address")
 		tcpAddr               = flag.String("tcp", ":8053", "TCP listen address")
+		dnstapNetwork         = flag.String("dnstap-network", "unix", "dnstap listen network: unix or tcp")
+		dnstapAddress         = flag.String("dnstap-address", "/tmp/dns-error-agent.sock", "dnstap listen address or unix socket path")
+		dnstapTimeout         = flag.Duration("dnstap-timeout", 0, "framestream I/O timeout for dnstap socket connections")
 		txtResponse           = flag.String("txt", "ok", "TXT payload returned for accepted reports")
 		metricsAddr           = flag.String("metrics-addr", ":9100", "Prometheus metrics HTTP listen address")
 		metricsPath           = flag.String("metrics-path", "/metrics", "Prometheus metrics path")
@@ -76,9 +81,13 @@ func main() {
 	_ = flag.CommandLine.Parse(expandCompactVerbosityArgs(os.Args[1:]))
 
 	cfg := agent.Config{
+		Mode:                  *mode,
 		AgentDomain:           *agentDomain,
 		UDPAddr:               *udpAddr,
 		TCPAddr:               *tcpAddr,
+		DNSTapNetwork:         *dnstapNetwork,
+		DNSTapAddress:         *dnstapAddress,
+		DNSTapTimeout:         time.Duration(*dnstapTimeout),
 		TXTResponse:           *txtResponse,
 		Verbosity:             int(verbosity),
 		MetricsAddr:           *metricsAddr,

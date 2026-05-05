@@ -203,7 +203,7 @@
             },
             "targets": [
                 {
-                    "expr": "sum(rate(dns_error_agent_report_events_total{result=\"challenged_no_cookie\"}[5m]))",
+                    "expr": "sum(rate(dns_error_agent_report_events_total{result=\"challenged_udp\"}[5m]))",
                     "legendFormat": "",
                     "refId": "A"
                 }

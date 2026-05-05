@@ -2,6 +2,11 @@
 
 This project provides a Go daemon that acts as an RFC9567 monitoring agent.
 
+It can either:
+
+- run as a DNS server that directly answers RFC9567 report queries, or
+- listen on a dnstap socket and extract RFC9567 report queries from captured DNS traffic.
+
 It listens for report queries of the form:
 
 `_er.<qtype>.<failing-qname>.<ede>._er.<agent-domain>`
@@ -11,16 +16,20 @@ and returns a positive `TXT` response for accepted reports.
 ## Features
 
 - UDP + TCP DNS listener
+- Optional dnstap socket listener mode
 - Prometheus metrics endpoint
 - RFC9567 report QNAME parser
 - JSON log output for each valid report
-- UDP-without-cookie challenge (`TC=1`) as recommended by RFC9567 Section 6.3
+- UDP challenge (`TC=1`) for all UDP queries
 
 ## Run
+
+### DNS daemon mode
 
 ```bash
 go mod tidy
 go run ./cmd/rfc9567-agent \
+  -mode dns \
   -agent-domain agent.example. \
   -udp :8053 \
   -tcp :8053 \
@@ -28,6 +37,29 @@ go run ./cmd/rfc9567-agent \
   -metrics-path /metrics \
   -metrics-zone-label-depth 2 \
   -txt ok
+```
+
+### dnstap socket mode
+
+In this mode, the agent listens for framestream dnstap connections and parses
+query payloads instead of serving DNS itself.
+
+```bash
+go run ./cmd/rfc9567-agent \
+  -mode dnstap \
+  -agent-domain agent.example. \
+  -dnstap-network unix \
+  -dnstap-address /tmp/dns-error-agent.sock \
+  -metrics-addr :9100
+```
+
+For TCP dnstap input, use for example:
+
+```bash
+go run ./cmd/rfc9567-agent \
+  -mode dnstap \
+  -dnstap-network tcp \
+  -dnstap-address :6000
 ```
 
 ## Docker stack (Agent + Prometheus + Grafana)
@@ -98,6 +130,9 @@ go run ./cmd/rfc9567-agent -metrics-addr ""
 - `dns_error_agent_report_events_total{result}`
 - `dns_error_agent_reports_by_ede_total{ede_code,query_type,error_zone}`
 
+In `dnstap` mode, `dns_error_agent_dns_responses_total` is not incremented because
+the agent is observing queries rather than generating DNS responses.
+
 #### `error_zone` examples
 
 For a failing name `www.api.broken.test.`:
@@ -160,4 +195,4 @@ Example report query for failed `A` (QTYPE 1) on `broken.test.` with EDE `7`:
 dig @127.0.0.1 -p 8053 TXT _er.1.broken.test.7._er.agent.example. +tcp
 ```
 
-If you query over UDP without DNS Cookies, the daemon responds with `TC=1` so a resolver can retry over TCP.
+If you query over UDP, the daemon responds with `TC=1` so a resolver can retry over TCP.
