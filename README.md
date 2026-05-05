@@ -28,7 +28,7 @@ and returns a positive `TXT` response for accepted reports.
 
 ```bash
 go mod tidy
-go run ./cmd/rfc9567-agent \
+go run ./cmd/dns-error-agent \
   -mode dns \
   -agent-domain agent.example. \
   -udp :8053 \
@@ -45,7 +45,7 @@ In this mode, the agent listens for framestream dnstap connections and parses
 query payloads instead of serving DNS itself.
 
 ```bash
-go run ./cmd/rfc9567-agent \
+go run ./cmd/dns-error-agent \
   -mode dnstap \
   -agent-domain agent.example. \
   -dnstap-network unix \
@@ -56,7 +56,7 @@ go run ./cmd/rfc9567-agent \
 For TCP dnstap input, use for example:
 
 ```bash
-go run ./cmd/rfc9567-agent \
+go run ./cmd/dns-error-agent \
   -mode dnstap \
   -dnstap-network tcp \
   -dnstap-address :6000
@@ -128,7 +128,7 @@ Example Prometheus configuration:
 
 ```yaml
 scrape_configs:
-  - job_name: rfc9567-agent
+  - job_name: dns-error-agent
     static_configs:
       - targets: ["127.0.0.1:9100"]
     metrics_path: /metrics
@@ -137,7 +137,7 @@ scrape_configs:
 You can disable metrics by setting an empty address:
 
 ```bash
-go run ./cmd/rfc9567-agent -metrics-addr ""
+go run ./cmd/dns-error-agent -metrics-addr ""
 ```
 
 `dns_error_agent_reports_by_ede_total` includes labels `ede_code`, `query_type`, and `error_zone`.
@@ -175,9 +175,9 @@ Use `-v` to increase logging detail. Repeat the flag for more verbosity.
 Examples:
 
 ```bash
-go run ./cmd/rfc9567-agent -v
-go run ./cmd/rfc9567-agent -v -v
-go run ./cmd/rfc9567-agent -vvv
+go run ./cmd/dns-error-agent -v
+go run ./cmd/dns-error-agent -v -v
+go run ./cmd/dns-error-agent -vvv
 ```
 
 Run tests:
