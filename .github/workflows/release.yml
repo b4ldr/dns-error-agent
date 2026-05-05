@@ -73,7 +73,10 @@ jobs:
                   SUFFIX=""
                   [ "${{ matrix.goos }}" = "windows" ] && SUFFIX=".exe"
                   GOARM="${{ matrix.goarm }}"
-                  ARCH="${{ matrix.goarch }}$( [ -n "$GOARM" ] && echo "v${GOARM}" )"
+                  ARCH="${{ matrix.goarch }}"
+                  if [ -n "$GOARM" ]; then
+                      ARCH="${ARCH}v${GOARM}"
+                  fi
                   ASSET="${BINARY}_${{ github.ref_name }}_${{ matrix.goos }}_${ARCH}${SUFFIX}"
                   echo "binary=${BINARY}${SUFFIX}" >> "$GITHUB_OUTPUT"
                   echo "asset=${ASSET}"            >> "$GITHUB_OUTPUT"
